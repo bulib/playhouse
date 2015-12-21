@@ -11,3 +11,7 @@ The ga-site-review.ipynb was created to download daily pageviews for the [data m
 The result of the script are csv files for each page with the pageviews from 2013-2015. 
 
 This notebook is part of a set of notebooks for downloading, updating, and visualizing pageview data for Google Analytics. 
+
+### r-plot
+
+This poorly named notebook takes the data generated from the ga-site-review and creats plots using R's ggplot. 
