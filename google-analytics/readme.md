@@ -21,3 +21,11 @@ This poorly named notebook takes the data generated from the ga-site-review and 
 This notebook updates the pageview data originally downloaded in the ga-site-review. It requires you set the last_update date in cell 2.
 
 When completed the notebook will create a new folder with updated csv files with the new data. The old data is preserved in the "last updated folder."
+
+
+### update-plotter 
+
+This R notebook uses the data from the updater notebook to create a new set of graphs for each page. The graphs are stored in the same folder as the csv files. 
+
+This notebook also requires that you set the last_update variable, this time in cell 1. 
+
