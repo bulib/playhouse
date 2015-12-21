@@ -12,6 +12,12 @@ The result of the script are csv files for each page with the pageviews from 201
 
 This notebook is part of a set of notebooks for downloading, updating, and visualizing pageview data for Google Analytics. 
 
-### r-plot
+### R-plot
 
 This poorly named notebook takes the data generated from the ga-site-review and creats plots using R's ggplot. 
+
+### updater
+
+This notebook updates the pageview data originally downloaded in the ga-site-review. It requires you set the last_update date in cell 2.
+
+When completed the notebook will create a new folder with updated csv files with the new data. The old data is preserved in the "last updated folder."
