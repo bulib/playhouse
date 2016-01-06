@@ -18,17 +18,6 @@ This assumes you have installed anaconda.
 
 **conda install gensim**
 
-##It is also possible to install the environment from an environment file that resides in this repository: 
-
-*	py3x.yml
-
-To install from the environment file, use the steps below:
-
-**source deactivate**
-
-**conda env create -f py3x.yml**
-
-**source activate py3x**
 
 
 
