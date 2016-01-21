@@ -12,7 +12,7 @@ This assumes you have installed anaconda.
 
 **pip install https://github.com/edsu/pymarc/archive/python3.zip**
 
-**pip install https://github.com/ubleipzig/marcx/archive/master.zip**
+**pip install https://github.com/miku/marcx/archive/master.zip**
 
 **pip install textblob**
 
