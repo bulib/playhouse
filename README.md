@@ -26,9 +26,10 @@ these projects are not actively maintained or consumed by the library, but are
 |:-------|:------|:----------|
 |`loc-harverst-modify-newspapers.ipynb`|harvest and modify bibliographic records of digitized newspapers from LoC|
 |`loc-visualize-article-sentiment.ipynb`|analyze and visualize polarity data of LoC articles from 'Chronicling America' collection. |
-|`oclc-find-related-issns.ipynb`|populate list of ISSNs related to given marcxml files, via OCLC xISSN API|
 |`nyt-article-congress-api.ipynb`|interact with NYT `articlesearch` and `politics` APIs |
 |`nsf-query-boston-awards.ipynb`|interrogate NSF awards API for those given to Boston academics |
+|`oclc-find-related-issns.ipynb`|populate list of ISSNs related to given marcxml files, via OCLC xISSN API|
+|`osf-orchid-by-related.ipynb`|generate a list of records that were created by selected orcid researchers|
 
 
 ### usage
