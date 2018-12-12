@@ -5,7 +5,7 @@ a collection of experimental/one-off projects conducted by BU Librarians and fri
 
 _important note: code has been preserved as is, and is not maintained or expected to be completely runnable_
 
-### background
+## background
 
 `playhouse` is inhabited by Boston University Librarians and friends interested in
   using python, javascript, php, and other languages to develop simple scripts and
@@ -20,7 +20,7 @@ these projects are not actively maintained or consumed by the library, but are
   preserved as technical/inspirational examples, proofs of concept, and potential
   placeholders for future development/exploration.
 
-### projects
+## projects
 
 |filename|project description|
 |:-------|:------|:----------|
@@ -30,17 +30,17 @@ these projects are not actively maintained or consumed by the library, but are
 |`nyt-article-congress-api.ipynb`|interact with NYT `articlesearch` and `politics` APIs |
 |`nsf-query-boston-awards.ipynb`|interrogate NSF awards API for those given to Boston academics |
 |`oclc-find-related-issns.ipynb`|populate list of ISSNs related to given marcxml files, via OCLC xISSN API|
-|`osf-orchid-by-related.ipynb`|generate a list of records that were created by selected orcid researchers|
+|`osf-find-by-related-orcid.ipynb`|generate a list of records that were created by selected orcid researchers|
 
 
-### usage
+## usage
 
 the majority of these projects were generated within/using
   [`jupyter notebooks`](https://jupyter-notebook.readthedocs.io/en/latest/notebook.html),
   which allow python code to be documented/described, run, and displayed in place.
 
 
-#### set-up
+### set-up
 
 `jupyter notebook` is the core requirement for running and interacting with these
   projects. it is included in the greater [`conda`](https://conda.io/docs/index.html)
@@ -48,7 +48,7 @@ the majority of these projects were generated within/using
   [conda install](https://conda.io/docs/user-guide/install/index.html), or
   [done separately](https://jupyter.readthedocs.io/en/latest/install.html#id4).
 
-#### how to run
+### how to run
 
 in order to best view/edit these projects, it's recommended that you run the following
   command in the terminal at the base of this project's directory:
@@ -65,7 +65,7 @@ to view (and/or edit) a notebook, simply select it from the list and it should
   open in a new tab. see the jupyter docs for [more usage instructions](https://jupyter-notebook.readthedocs.io/en/latest/notebook.html#starting-the-notebook-server).
 
 
-#### advanced: creating an environment
+### advanced: creating an environment
 
 _note: untested legacy docs moved from `install_a_working_python_3.5_environment.md`_
 
