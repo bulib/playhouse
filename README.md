@@ -24,6 +24,7 @@ these projects are not actively maintained or consumed by the library, but are
 
 |filename|project description|
 |:-------|:------|:----------|
+|`doi-get-bibtex-from-title.ipynb`|obtain a bibtex record for a given doi from doi.org after getting its doi from crossref|
 |`loc-harverst-modify-newspapers.ipynb`|harvest and modify bibliographic records of digitized newspapers from LoC|
 |`loc-visualize-article-sentiment.ipynb`|analyze and visualize polarity data of LoC articles from 'Chronicling America' collection. |
 |`nyt-article-congress-api.ipynb`|interact with NYT `articlesearch` and `politics` APIs |
