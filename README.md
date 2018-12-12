@@ -3,6 +3,8 @@
 a collection of experimental/one-off projects conducted by BU Librarians and friends.
 
 
+_important note: code has been preserved as is, and is not maintained or expected to be completely runnable_
+
 ### background
 
 `playhouse` is inhabited by Boston University Librarians and friends interested in
@@ -22,11 +24,11 @@ these projects are not actively maintained or consumed by the library, but are
 
 |filename|project description|
 |:-------|:------|:----------|
-||harvest and modify bibliographic records of digitized newspapers from LoC|
-||populate list of ISSNs related to given marcxml files, via OCLC xISSN API|
-||interact with NYT `articlesearch` and `politics` APIs |
-||interrogate NSF awards API for those given to Boston academics |
-||analyze and visualize polarity data of LoC articles from 'Chronicling America' collection. |
+|`loc-harverst-modify-newspapers.ipynb`|harvest and modify bibliographic records of digitized newspapers from LoC|
+|`loc-visualize-article-sentiment.ipynb`|analyze and visualize polarity data of LoC articles from 'Chronicling America' collection. |
+|`oclc-find-related-issns.ipynb`|populate list of ISSNs related to given marcxml files, via OCLC xISSN API|
+|`nyt-article-congress-api.ipynb`|interact with NYT `articlesearch` and `politics` APIs |
+|`nsf-query-boston-awards.ipynb`|interrogate NSF awards API for those given to Boston academics |
 
 
 ### usage
@@ -61,7 +63,7 @@ to view (and/or edit) a notebook, simply select it from the list and it should
   open in a new tab. see the jupyter docs for [more usage instructions](https://jupyter-notebook.readthedocs.io/en/latest/notebook.html#starting-the-notebook-server).
 
 
-#### advanced: creating an environment 
+#### advanced: creating an environment
 
 _note: untested legacy docs moved from `install_a_working_python_3.5_environment.md`_
 
