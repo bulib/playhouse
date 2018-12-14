@@ -54,7 +54,7 @@ in order to best view/edit these projects, it's recommended that you run the fol
   command in the terminal at the base of this project's directory:
 
 ```
-$ jupyter notebook /path/to/playhouse/
+$ jupyter notebook /playhouse/src/
 ```
 
 this should take over the command window with 'NotebookApp' logs, opening the
