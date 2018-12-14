@@ -60,9 +60,13 @@ $ jupyter notebook /playhouse/src/
 this should take over the command window with 'NotebookApp' logs, opening the
   browser automatically to [http://localhost:8888/tree](http://localhost:8888/tree)
   where you should see an interactive display of the files included in the directory.
+  
+![jupyter-notebook-screenshot_tree](./img/screenshot-jupyter-tree.png)
 
 to view (and/or edit) a notebook, simply select it from the list and it should
   open in a new tab. see the jupyter docs for [more usage instructions](https://jupyter-notebook.readthedocs.io/en/latest/notebook.html#starting-the-notebook-server).
+  
+![jupyter-notebook-screenshot_view](./img/screenshot-jupyter-view.png)
 
 
 ### advanced: creating an environment
