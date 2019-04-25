@@ -1,0 +1,36 @@
+{
+  "name": "bulib-playhouse",
+  "version": "0.1.0",
+  "description": "a collection of experimental projects/mashups created by BU Librarians and friends.",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bulib/playhouse.git"
+  },
+  "keywords": [
+    "experiment",
+    "poc",
+    "linked-data",
+    "code4lib",
+    "jupyter",
+    "API",
+    "lambda",
+    "aws"
+  ],
+  "author": "bulib",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/bulib/playhouse/issues"
+  },
+  "homepage": "https://github.com/bulib/playhouse#readme",
+  "devDependencies": {
+    "aws-sdk": "^2.442.0",
+    "node-lambda": "^0.13.0",
+    "serverless": "^1.41.1"
+  },
+  "dependencies": {
+    "aws-cli-js": "^2.0.5"
+  }
+}
