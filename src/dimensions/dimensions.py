@@ -7,6 +7,8 @@ LIMIT_FOR_IN_FILTER = 512
 directoryPath = dirname(realpath(__file__))
 yr_start = 2018
 yr_end = 2018
+yr_current = 2019
+
 
 # get the list of researchers: https://app.dimensions.ai/dsl
 def getListOfResearchObjectsFromDimensionsAPI():
@@ -23,8 +25,8 @@ def getListOfResearchObjectsFromDimensionsAPI():
     return researchers[all] limit 1000 skip 0\n\n\n
     """.format(
       str(LAST_NAMES_LIST).replace("'","\""), 
-      "[{},{},{}]".format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL), 
-      "{}:{}".format(yr_start,yr_end)
+      '["{}","{}","{}"]'.format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL), 
+      "[{}:{}]".format(yr_start,yr_current)
     )
   print(q_GET_LIST_OF_RESEARCH_IDS)
 
@@ -76,7 +78,7 @@ def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
       search publications
         where researchers.id in {}
         and year in {}
-      return publications[title+year+doi+issn+publisher+date+times_cited+type+researchers] limit 1000 skip 0\n\n\n
+      return publications[title+year+doi+issn+publisher+date+times_cited+type] limit 1000 skip 0\n\n\n
       """.format(
         i+1, num_queries,
         str(list_of_lists[i]).replace("'","\""), 
@@ -98,7 +100,14 @@ def deduplicateListOfPublications():
     print("{} -> {}".format(str(initial_list_size), str(len(ls_publication_ids))))
       
 
+# print out query to dimensions API and manually process it into *researchers.json
+getListOfResearchObjectsFromDimensionsAPI()
 
-# ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
-# getListOfPublicationObjectsFromDimensionsResearcherIDs(ls_researcher_ids)
+# process researchers.json into list of researcherIds 
+ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
+
+# print out query to dimensions API, then manually process it into publications.json  
+getListOfPublicationObjectsFromDimensionsResearcherIDs(ls_researcher_ids)
+
+# process the '*publications.json' 
 deduplicateListOfPublications()
