@@ -1,4 +1,4 @@
-import json
+import json, math
 from os.path import dirname, realpath, join
 
 # get the list of researchers: https://app.dimensions.ai/dsl
@@ -7,6 +7,10 @@ id_BU_ACADEMY = 'grid.448566.d'
 id_BU_MEDICAL = 'grid.475010.7'
 LAST_NAMES_LIST = ["ADHIKARI,","AGOP NERSESIAN,","AGRAHARI,","AHN,","AKINTEWE,", "...","ZOU,","ZUBERER,"]
 yr_start = 2017
+
+LIMIT_FOR_IN_FILTER = 512
+
+directoryPath = dirname(realpath(__file__))
 yr_end = 2018
 q_GET_LIST_OF_RESEARCH_IDS = """\n\n\n
   /* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
@@ -54,3 +58,54 @@ q_GET_LIST_OF_PUBLICATIONS = """\n\n\n
     "[{}:{}]".format(yr_start, yr_end)
   )
 print(q_GET_LIST_OF_PUBLICATIONS)
+def chunckListIntoListOfListsBasedOnLimit(original_list, limit):
+  """
+    dimensions API has limits on how long each list can be, 
+    this breaks larger lists into multiple lists for chained calls
+  """
+  len_old_list = len(original_list)
+  len_new_list = math.ceil(len(original_list) / limit)
+  new_list = []
+  for i in range(len_new_list):
+    start_index = i*limit   # e.g. (0 -> 0, 1->512, 2->1024)
+    end_index = ((i+1)*limit)-1 # e.g. (0 -> 511, 1->1023)
+    print("{}[{}] => [{}:{}]".format(len_old_list, i, start_index, end_index))
+    new_list.append(original_list[start_index:end_index]) # e.g. 0 -> 0:511, 1 -> 512:1023, 2-> 1024:1535
+  return new_list
+
+
+def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
+
+  list_of_lists = chunckListIntoListOfListsBasedOnLimit(researcher_ids, LIMIT_FOR_IN_FILTER)
+  num_queries = len(list_of_lists)
+
+  # use the list of 'researcher_id's to query dimensions for publications
+  for i in range(num_queries):
+    q_GET_LIST_OF_PUBLICATIONS = """\n\n\n
+      /* -- QUERY TO GET THE LIST OF PUBLICATIONS  ({} of {}) -- */
+      search publications
+        where researchers.id in {}
+        and year in {}
+      return publications[title+year+doi+issn+publisher+date+times_cited+type+researchers] limit 1000 skip 0\n\n\n
+      """.format(
+        i+1, num_queries,
+        str(list_of_lists[i]).replace("'","\""), 
+        "[{}:{}]".format(yr_start, yr_end)
+      )
+    print(q_GET_LIST_OF_PUBLICATIONS)
+
+def deduplicateListOfPublications():
+  with open(join(directoryPath,"2018_publications.json"), "r") as publications_json:
+    ls_publication_ids = []
+    publication_list = json.load(publications_json)
+    initial_list_size = len(publication_list)
+
+    for publication in publication_list:
+      pub_id = publication["doi"] if "doi" in publication else publication["issn"][0]
+      if(pub_id not in ls_publication_ids):
+        ls_publication_ids.append(pub_id)
+
+    print("{} -> {}".format(str(initial_list_size), str(len(ls_publication_ids))))
+      
+
+deduplicateListOfPublications()
