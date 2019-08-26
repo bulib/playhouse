@@ -118,10 +118,10 @@ class Publication:
     self.pages = publication["pages"] if "pages" in publication else ""
 
   def __str__(self):
-    return "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+    return "{}\t{}\t{}\t{}\t{}\t'{}'\t{}\t{}\t{}\t'{}'\n".format(
       self.pid, self.date, self.rids, 
-      self.title, self.doi, self.issn, 
-      self.pub, self.vol, self.iss, self.pages
+      self.doi, self.issn, 
+      self.pub, self.vol, self.iss, self.pages, self.title
     )
 
 def deduplicateListOfPublications(ls_bu_researcher_ids):
@@ -150,7 +150,7 @@ def deduplicateListOfPublications(ls_bu_researcher_ids):
   # write out new tsv file
   ls_publication_entries.sort(key=lambda p: p.date)
   with open(join(directoryPath,"2018_publications.tsv"), "w") as output_file:
-    output_file.write("article id\tpublication date\tresearcher ids\ttitle\tdoi\tissn\tpublisher\tvolume\tissue\tpages\n")
+    output_file.write("article_id\tpublication_date\tresearcher_ids\tdoi\tissn\tpublisher\tvolume\tissue\tpages\ttitle\n")
     for pub_obj in ls_publication_entries:
       output_file.write(str(pub_obj))
 
