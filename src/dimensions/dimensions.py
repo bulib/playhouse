@@ -1,4 +1,4 @@
-import json, math
+import json, math, re
 from os.path import dirname, realpath, join
 
 
@@ -33,20 +33,34 @@ def getListOfResearchObjectsFromDimensionsAPI():
 # translate list of researcher objects into list of ids
 def getListOfResearcherIDsFromDimensionsObjects():
   researcher_id_list = []
+  researcher_entry_list = []
   with open(join(directoryPath,"2018_researchers.json"), "r") as researchers_json:
     research_list = json.load(researchers_json)
 
     for researcher in research_list:
-      researcher_id_list.append(researcher["id"])
+      rid = researcher["id"]
+      last_name = researcher["last_name"]
+      first_name = researcher["first_name"]
+
+      researcher_id_list.append(rid)
+      researcher_entry_list.append("{}\t{}\t{}\n".format(last_name, rid, first_name))
 
       if "obsolete" in researcher and researcher["redirect"]:
         for id in researcher["redirect"]:
+          if id in researcher_id_list:
+            continue
           researcher_id_list.append(id)
+          researcher_entry_list.append("{}\t{}\t{}\n".format(last_name, id, first_name))
 
-  researcher_id_list = list(set(researcher_id_list)) # deduplicate
   print("number of researchers: " + str(len(research_list)))
   print("number of researcher_ids: " + str(len(researcher_id_list)))
-  # print(researcher_id_list)
+
+  with open(join(directoryPath,"2018_researchers.tsv"), "w") as researchers_tsv: 
+    researchers_tsv.write("last_name\tresearcher id\tfirst_name\n")
+    researcher_entry_list.sort()
+    for entry in researcher_entry_list:
+      researchers_tsv.write(entry)
+  
   return researcher_id_list
 
 
@@ -78,7 +92,7 @@ def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
       search publications
         where researchers.id in {}
         and year in {}
-      return publications[title+year+doi+issn+publisher+date+times_cited+type] limit 1000 skip 0\n\n\n
+      return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0\n\n\n
       """.format(
         i+1, num_queries,
         str(list_of_lists[i]).replace("'","\""), 
@@ -86,22 +100,63 @@ def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
       )
     print(q_GET_LIST_OF_PUBLICATIONS)
 
-def deduplicateListOfPublications():
+
+class Publication:
+  def __init__(self, publication, rids):
+    self.pid = publication["id"] if "id" in publication else ""
+    self.date = publication["date"] if "date" in publication else ""
+    self.rids = "||".join(rids)
+
+    raw_title = publication["title"] if "title" in publication else ""
+    self.title = re.sub(r"\s+"," ", raw_title) if raw_title else ""
+    self.doi = publication["doi"] if "doi" in publication else ""
+    self.issn = publication["issn"][0] if "issn" in publication else ""
+
+    self.pub = publication["publisher"] if "publisher" in publication else ""
+    self.vol = publication["volume"] if "volume" in publication else ""
+    self.iss = publication["issue"] if "issue" in publication else ""
+    self.pages = publication["pages"] if "pages" in publication else ""
+
+  def __str__(self):
+    return "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+      self.pid, self.date, self.rids, 
+      self.title, self.doi, self.issn, 
+      self.pub, self.vol, self.iss, self.pages
+    )
+
+def deduplicateListOfPublications(ls_bu_researcher_ids):
+  ls_pub_ids = []
+  ls_publication_entries = []
   with open(join(directoryPath,"2018_publications.json"), "r") as publications_json:
-    ls_publication_ids = []
     publication_list = json.load(publications_json)
     initial_list_size = len(publication_list)
 
     for publication in publication_list:
-      pub_id = publication["doi"] if "doi" in publication else publication["issn"][0]
-      if(pub_id not in ls_publication_ids):
-        ls_publication_ids.append(pub_id)
+      pid = publication["id"]
 
-    print("{} -> {}".format(str(initial_list_size), str(len(ls_publication_ids))))
+      rids = []
+      include_publication = False
+      for researcher in publication["researchers"]:
+        rid = researcher["id"]
+        if(rid and rid not in rids and rid in ls_bu_researcher_ids):
+          rids.append(rid)
       
+      if pid not in ls_pub_ids:
+        ls_pub_ids.append(pid)
+        ls_publication_entries.append(Publication(publication, rids))
+    
+    print("{} -> {}".format(str(initial_list_size), str(len(ls_publication_entries))))
+
+  # write out new tsv file
+  ls_publication_entries.sort(key=lambda p: p.date)
+  with open(join(directoryPath,"2018_publications.tsv"), "w") as output_file:
+    output_file.write("article id\tpublication date\tresearcher ids\ttitle\tdoi\tissn\tpublisher\tvolume\tissue\tpages\n")
+    for pub_obj in ls_publication_entries:
+      output_file.write(str(pub_obj))
+
 
 # print out query to dimensions API and manually process it into *researchers.json
-getListOfResearchObjectsFromDimensionsAPI()
+# getListOfResearchObjectsFromDimensionsAPI()
 
 # process researchers.json into list of researcherIds 
 ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
@@ -110,4 +165,4 @@ ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
 getListOfPublicationObjectsFromDimensionsResearcherIDs(ls_researcher_ids)
 
 # process the '*publications.json' 
-deduplicateListOfPublications()
+deduplicateListOfPublications(ls_researcher_ids)
