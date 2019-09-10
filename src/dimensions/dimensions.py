@@ -1,14 +1,24 @@
 import json, math, re
 from os.path import dirname, realpath, join
 
+# programmatic variables from/for the Dimensions API or for the script
+LIMIT_FOR_IN_FILTER = 512  # can't check against more than this many items in a given list in one query (e.g. 'where researchers.id in [...]')
+directoryPath = dirname(realpath(__file__))  # the directory we're running the script in
 
-LIMIT_FOR_IN_FILTER = 512
-
-directoryPath = dirname(realpath(__file__))
+# direct inputs into the query
 yr_start = 2018
 yr_end = 2018
 yr_current = 2019
 
+# sensible parameters we're using to sanity-check and filter the results
+low_estimate_of_avg_number_of_publications_per_researcher = 0.8
+high_estimate_of_avg_number_of_publications_per_researcher = 2.5
+high_estimate_of_publications_wed_expect_a_single_postdoc_to_publish_in_a_year = 6
+greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper = 8
+
+# assorted stats to be filled as the program runs
+approximate_num_researchers = 0
+approximate_num_researchers_that_published = 0
 
 # get the list of researchers: https://app.dimensions.ai/dsl
 def getListOfResearchObjectsFromDimensionsAPI():
@@ -16,17 +26,21 @@ def getListOfResearchObjectsFromDimensionsAPI():
   id_BU_ACADEMY = 'grid.448566.d'
   id_BU_MEDICAL = 'grid.475010.7'
   LAST_NAMES_LIST = ["ADHIKARI,","AGOP NERSESIAN,","AGRAHARI,","AHN,","AKINTEWE,", "...","ZOU,","ZUBERER,"]
+  
+  earliest_sensible_publication_year_for_a_postdoc = yr_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
   q_GET_LIST_OF_RESEARCH_IDS = """\n\n\n
     /* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
     search researchers  
       where last_name in {}
       and current_research_org.id in {}
       and last_publication_year in {}
+      and first_publication_year in {}
     return researchers[all] limit 1000 skip 0\n\n\n
     """.format(
       str(LAST_NAMES_LIST).replace("'","\""), 
       '["{}","{}","{}"]'.format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL), 
-      "[{}:{}]".format(yr_start,yr_current)
+      "[{}:{}]".format(yr_start,yr_current),
+      list(range(earliest_sensible_publication_year_for_a_postdoc, yr_end+1))  # any of the years spanning between those years
     )
   print(q_GET_LIST_OF_RESEARCH_IDS)
 
