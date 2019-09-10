@@ -48,11 +48,12 @@ def getListOfResearchObjectsFromDimensionsAPI():
   id_BU = 'grid.189504.1'
   id_BU_ACADEMY = 'grid.448566.d'
   id_BU_MEDICAL = 'grid.475010.7'
-  LAST_NAMES_LIST = ["ADHIKARI,","AGOP NERSESIAN,","AGRAHARI,","AHN,","AKINTEWE,", "...","ZOU,","ZUBERER,"]
+  with open(join(directoryPath,"data","2018_postdoc_names.csv"), "r") as names_data:
+    ls_names = [re.split(' |,',line)[0] for line in names_data]
+    LAST_NAMES_LIST = set(ls_names)
   
   earliest_sensible_publication_year_for_a_postdoc = yr_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
-  q_GET_LIST_OF_RESEARCH_IDS = """
-/* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
+  q_GET_LIST_OF_RESEARCH_IDS = """/* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
 search researchers  
   where last_name in {}
   and current_research_org.id in {}
@@ -60,14 +61,13 @@ search researchers
   and first_publication_year in {}
 return researchers[all] limit 1000 skip 0\n
 """.format(
-      str(LAST_NAMES_LIST).replace("'","\""), 
+      str(LAST_NAMES_LIST).replace("'","\"").replace("{","[").replace("}","]"), 
       '["{}","{}","{}"]'.format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL), 
       "[{}:{}]".format(yr_start,yr_current),
       list(range(earliest_sensible_publication_year_for_a_postdoc, yr_end+1))  # any of the years spanning between those years
     )
   with open(join(directoryPath,"output","researcher_queries.txt"), "w") as queries_output:
     queries_output.write(q_GET_LIST_OF_RESEARCH_IDS)
-  print(q_GET_LIST_OF_RESEARCH_IDS)
 
 def getListOfResearcherIDsFromRawJSONFileOfThem():
   ls_rids = []
@@ -97,15 +97,18 @@ def getListOfResearcherIDsFromDimensionsObjects():
           if id in researcher_id_list:
             continue
           researcher_id_list.append(id)
-          researcher_entry_list.append("{}\t{}\t{}\n".format(last_name, id, first_name))
+          
+          line_to_add = "{}\t{}\t{}\n".format(last_name, id, first_name)
+          if line_to_add not in researcher_entry_list:
+            researcher_entry_list.append(line_to_add)
 
-  print("number of researchers: " + str(len(research_list)))
-  print("number of researcher_ids: " + str(len(researcher_id_list)))
+  # print("number of researchers: " + str(len(research_list)))
+  # print("number of researcher_ids: " + str(len(researcher_id_list)))
 
   with open(join(directoryPath,"output","2018_researchers.tsv"), "w") as researchers_tsv: 
     researchers_tsv.write("last_name\tresearcher_id\tfirst_name\n")
-    researcher_entry_set = set(researcher_entry_list.sort())
-    for entry in researcher_entry_set:
+    researcher_entry_list.sort()
+    for entry in researcher_entry_list:
       researchers_tsv.write(entry)
   
   with open(join(directoryPath,"data","2018_rids.json"), "w") as rids_json:
@@ -136,20 +139,18 @@ def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
 
   # use the list of 'researcher_id's to query dimensions for publications
   for i in range(num_queries):
-    q_GET_LIST_OF_PUBLICATIONS = """\n
-  /* -- QUERY TO GET THE LIST OF PUBLICATIONS  ({} of {}) -- */
-  search publications
-    where researchers.id in {}
-    and year in {}
-  return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0\n
-      """.format(
+    q_GET_LIST_OF_PUBLICATIONS = """/* -- QUERY TO GET THE LIST OF PUBLICATIONS  ({} of {}) -- */
+search publications
+  where researchers.id in {}
+  and year in {}
+return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0\n
+""".format(
         i+1, num_queries,
         str(list_of_lists[i]).replace("'","\""), 
         "[{}:{}]".format(yr_start, yr_end)
       )
     with open(join(directoryPath,"output","publications_queries.txt"), "a") as queries_output:
       queries_output.write(q_GET_LIST_OF_PUBLICATIONS)
-
 
 
 def deduplicateListOfPublications(ls_bu_researcher_ids):
@@ -252,11 +253,10 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
 
 if __name__ == "__main__":
   # print out query to dimensions API and manually process it into *researchers.json
-  # getListOfResearchObjectsFromDimensionsAPI()
+  getListOfResearchObjectsFromDimensionsAPI()
 
   # process researchers.json into list of researcherIds 
-  # ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
-  ls_researcher_ids = getListOfResearcherIDsFromRawJSONFileOfThem()
+  ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
 
   # print out query to dimensions API, then manually process it into publications.json  
   getListOfPublicationObjectsFromDimensionsResearcherIDs(ls_researcher_ids)
