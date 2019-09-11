@@ -13,11 +13,15 @@ yr_current = 2019
 # sensible parameters we're using to sanity-check and filter the results
 low_estimate_of_avg_number_of_publications_per_researcher = 0.8
 high_estimate_of_avg_number_of_publications_per_researcher = 2.0
+
+low_estimate_of_percentage_of_publishing_researchers = 55
+high_estimate_of_percentage_of_publishing_researchers = 90
+
 high_estimate_of_any_number_of_publications_per_researcher = 8
 greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper = 8
 
 
-# publication object
+# publication object used to print out the `publiactions.tsv`
 class Publication:
     def __init__(self, publication, rids):
         self.pid = publication["id"] if "id" in publication else ""
@@ -53,8 +57,10 @@ def getListOfResearchObjectsFromDimensionsAPI(researchers_csv_filename):
     id_BU_MEDICAL = 'grid.475010.7'
     num_total_researchers = 0
     with open(join(directoryPath, "data", researchers_csv_filename), mode="r", encoding="utf-8-sig") as names_data:
-        num_total_researchers += 1
-        ls_names = [re.split(' |,', line)[0] for line in names_data]
+        ls_names = []
+        for line in names_data:
+            ls_names.append( re.split(' |,', line)[0] )
+            num_total_researchers += 1
         LAST_NAMES_LIST = set(ls_names)
 
     earliest_sensible_publication_year_for_a_postdoc = yr_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
@@ -199,7 +205,7 @@ def deduplicateListOfPublications(ls_bu_researcher_ids):
     return ls_publication_entries
 
 
-def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications):
+def rationalizeAndDescribeOutput(ls_researcher_ids, num_researchers, num_publications):
     # create dictionary for each researcher id to the number of works they've created
     dict_researchers = {}
     with open(join(directoryPath, "output", "publications.tsv"), "r") as output:
@@ -225,12 +231,12 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
             ls_num_publications_per_individual.append(num_pub)
 
             # flag researchers who we think have published more than we'd expect
-            if (num_pub >= high_estimate_of_any_number_of_publications_per_researcher):
+            if num_pub >= high_estimate_of_any_number_of_publications_per_researcher:
                 researcher_ids_to_check.append(rid)
                 researchers_to_check.write("'{}'\t{}\n".format(rid, str(num_pub)))
 
             # keep update of the highest number of publications
-            if (num_pub >= highest_actual_number_of_publications_per_grad_student):
+            if num_pub >= highest_actual_number_of_publications_per_grad_student:
                 highest_actual_number_of_publications_per_grad_student = num_pub
 
     # calculate and report statistics
@@ -239,6 +245,8 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
     ))
 
     print("-- statistics --")
+
+    # number of publications per researcher should be between low_estimate_of_avg_num and high_estimate_of_avg_num
     avg_num_publications_per_researcher = (1.0 * num_publications) / num_researchers
     if avg_num_publications_per_researcher <= low_estimate_of_avg_number_of_publications_per_researcher:
         avg_msg = "LOW"
@@ -249,10 +257,22 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
     print("average number of publications per researcher: ({}/{}) = {} : {}".format(
         str(num_publications), str(num_researchers), str(avg_num_publications_per_researcher), avg_msg
     ))
-    print("percentage of researchers who published: ({}/{}) = {}".format(
+
+    # we'd expect between approximate_number_of_publishing_researchers to be within a range
+    apx_percentage_publishing = (100.0 * approximate_number_of_publishing_researchers) / num_researchers
+    if apx_percentage_publishing <= low_estimate_of_percentage_of_publishing_researchers:
+        avg_msg = "LOW"
+    elif apx_percentage_publishing >= high_estimate_of_percentage_of_publishing_researchers:
+        avg_msg = "HIGH"
+    else:
+        avg_msg = "GOOD"
+    print("percentage of researchers who published: ({}/{}) = {} : {}".format(
         str(approximate_number_of_publishing_researchers), str(num_researchers),
-        str((100.0 * (approximate_number_of_publishing_researchers) / num_researchers))
+        str(apx_percentage_publishing),
+        avg_msg
     ))
+
+    # catch professors and others that are associated with more papers than they could effectively author as a postdoc
     print("most number of articles published by a single researcher: " + str(
         highest_actual_number_of_publications_per_grad_student))
     print("number of researchers who published more than the maximum {} papers expected (per-year): {}".format(
@@ -269,7 +289,7 @@ if __name__ == "__main__":
     # process researchers.json into list of researcherIds
     ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
 
-    # researcher_ids to disinclude (suppose you've identified a few professors from researcher_ids_to_check)
+    # researcher_ids to dis-include (suppose you've identified a few professors from researcher_ids_to_check)
     ls_researcher_ids_to_remove = []
     for rid in ls_researcher_ids_to_remove:
         ls_researcher_ids.remove(rid)
@@ -282,4 +302,4 @@ if __name__ == "__main__":
 
     # run the end results against
     num_publications = len(ls_publication_entries)
-    findPublicationOddities(ls_researcher_ids, num_postdocs, num_publications)
+    rationalizeAndDescribeOutput(ls_researcher_ids, num_postdocs, num_publications)
