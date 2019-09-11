@@ -38,20 +38,22 @@ class Publication:
     return "article_id\tpublication_date\tresearcher_ids\tdoi\tissn\tpublisher\tvolume\tissue\tpages\ttitle\n"
   def __str__(self):
     return "{}\t{}\t{}\t{}\t{}\t'{}'\t{}\t{}\t{}\t'{}'\n".format(
-      self.pid, self.date, self.rids, 
-      self.doi, self.issn, 
+      self.pid, self.date, self.rids,
+      self.doi, self.issn,
       self.pub, self.vol, self.iss, self.pages, self.title
     )
 
 # get the list of researchers: https://app.dimensions.ai/dsl
-def getListOfResearchObjectsFromDimensionsAPI():
+def getListOfResearchObjectsFromDimensionsAPI(researchers_csv_filename):
   id_BU = 'grid.189504.1'
   id_BU_ACADEMY = 'grid.448566.d'
   id_BU_MEDICAL = 'grid.475010.7'
-  with open(join(directoryPath,"data","2018_postdoc_names.csv"), mode="r", encoding="utf-8-sig") as names_data:
-    ls_names = [re.split(' |,',line)[0] for line in names_data]
+  num_total_researchers = 0
+  with open(join(directoryPath, "data", researchers_csv_filename), mode="r", encoding="utf-8-sig") as names_data:
+    num_total_researchers += 1
+    ls_names = [re.split(' |,', line)[0] for line in names_data]
     LAST_NAMES_LIST = set(ls_names)
-  
+
   earliest_sensible_publication_year_for_a_postdoc = yr_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
   q_GET_LIST_OF_RESEARCH_IDS = """/* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
 search researchers  
@@ -61,13 +63,15 @@ search researchers
   and first_publication_year in {}
 return researchers[all] limit 1000 skip 0\n
 """.format(
-      str(LAST_NAMES_LIST).replace("'","\"").replace("{","[").replace("}","]"), 
-      '["{}","{}","{}"]'.format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL), 
+      str(LAST_NAMES_LIST).replace("'", "\"").replace("{", "[").replace("}", "]"),
+      '["{}","{}","{}"]'.format(id_BU,id_BU_ACADEMY,id_BU_MEDICAL),
       "[{}:{}]".format(yr_start,yr_current),
       list(range(earliest_sensible_publication_year_for_a_postdoc, yr_end+1))  # any of the years spanning between those years
     )
   with open(join(directoryPath,"output","researcher_queries.txt"), "w") as queries_output:
     queries_output.write(q_GET_LIST_OF_RESEARCH_IDS)
+
+  return num_total_researchers
 
 def getListOfResearcherIDsFromRawJSONFileOfThem():
   ls_rids = []
@@ -97,7 +101,7 @@ def getListOfResearcherIDsFromDimensionsObjects():
           if id in researcher_id_list:
             continue
           researcher_id_list.append(id)
-          
+
           line_to_add = "{}\t{}\t{}\n".format(last_name, id, first_name)
           if line_to_add not in researcher_entry_list:
             researcher_entry_list.append(line_to_add)
@@ -105,12 +109,12 @@ def getListOfResearcherIDsFromDimensionsObjects():
   # print("number of researchers: " + str(len(research_list)))
   # print("number of researcher_ids: " + str(len(researcher_id_list)))
 
-  with open(join(directoryPath,"output","researchers.tsv"), "w") as researchers_tsv: 
+  with open(join(directoryPath,"output","researchers.tsv"), "w") as researchers_tsv:
     researchers_tsv.write("last_name\tresearcher_id\tfirst_name\n")
     researcher_entry_list.sort()
     for entry in researcher_entry_list:
       researchers_tsv.write(entry)
-  
+
   with open(join(directoryPath,"data","2018_rids.json"), "w") as rids_json:
     rids_json.write(str(researcher_id_list).replace("'",'"'))
   return researcher_id_list
@@ -118,7 +122,7 @@ def getListOfResearcherIDsFromDimensionsObjects():
 
 def _chunkListIntoListOfListsBasedOnLimit(original_list, limit):
   """
-    dimensions API has limits on how long each list can be, 
+    dimensions API has limits on how long each list can be,
     this breaks larger lists into multiple lists for chained calls
   """
   len_old_list = len(original_list)
@@ -138,7 +142,7 @@ def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
   num_queries = len(list_of_lists)
 
   # use the list of 'researcher_id's to query dimensions for publications
-  with open(join(directoryPath,"output","publications_queries.txt"), "w") as queries_output:
+  with open(join(directoryPath, "output", "publications_queries.txt"), "w") as queries_output:
     for i in range(num_queries):
       q_GET_LIST_OF_PUBLICATIONS = """/* -- QUERY TO GET THE LIST OF PUBLICATIONS  ({} of {}) -- */
 search publications
@@ -147,7 +151,7 @@ search publications
 return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0\n
 """.format(
     i+1, num_queries,
-    str(list_of_lists[i]).replace("'","\""), 
+    str(list_of_lists[i]).replace("'","\""),
     "[{}:{}]".format(yr_start, yr_end)
   )
       queries_output.write(q_GET_LIST_OF_PUBLICATIONS)
@@ -156,7 +160,7 @@ return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+tim
 def deduplicateListOfPublications(ls_bu_researcher_ids):
   ls_pub_ids = []
   ls_publication_entries = []
-  with open(join(directoryPath,"data","2018_publications.json"), "r") as publications_json:
+  with open(join(directoryPath, "data", "2018_publications.json"), "r") as publications_json:
     publication_list = json.load(publications_json)
     initial_list_size = len(publication_list)
 
@@ -169,12 +173,12 @@ def deduplicateListOfPublications(ls_bu_researcher_ids):
         rid = researcher["id"]
         if(rid and rid not in rids and rid in ls_bu_researcher_ids):
           rids.append(rid)
-      
+
       if pid not in ls_pub_ids:
         ls_pub_ids.append(pid)
         ls_publication_entries.append(Publication(publication, rids))
-        
-    # deduplicate 
+
+    # deduplicate
     '''
     print("number of publications before and after filtering: {} -> {}".format(
       str(initial_list_size), str(len(ls_publication_entries))
@@ -183,7 +187,7 @@ def deduplicateListOfPublications(ls_bu_researcher_ids):
 
   # write out new tsv file
   ls_publication_entries.sort(key=lambda p: p.date)
-  with open(join(directoryPath,"output","publications.tsv"), "w") as output_file:
+  with open(join(directoryPath, "output", "publications.tsv"), "w") as output_file:
     output_file.write(Publication.headerStr())
     for pub_obj in ls_publication_entries:
       output_file.write(str(pub_obj))
@@ -193,7 +197,7 @@ def deduplicateListOfPublications(ls_bu_researcher_ids):
 def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications):
   # create dictionary for each researcher id to the number of works they've created
   dict_researchers = {}
-  with open(join(directoryPath,"output","publications.tsv"), "r") as output:
+  with open(join(directoryPath, "output", "publications.tsv"), "r") as output:
     for line in output:
       for rid in ls_researcher_ids:
         if(rid in line):
@@ -202,13 +206,13 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
           else:
             dict_researchers[rid] = 1
 
-  # calculate some statistics about this 
+  # calculate some statistics about this
   approximate_number_of_publishing_researchers = len(dict_researchers)  # skewed by researchers with more than one researcher_ids
   researcher_ids_to_check = []
   ls_num_publications_per_individual = []
   highest_actual_number_of_publications_per_grad_student = 0
 
-  with open(join(directoryPath,"output","researchers_to_check.tsv"), 'w') as researchers_to_check:
+  with open(join(directoryPath, "output", "researchers_to_check.tsv"), 'w') as researchers_to_check:
     researchers_to_check.write("researcher_id\tnum_published\n")
     for (rid, num_pub) in dict_researchers.items():
       # prepare stats for average publications per individual
@@ -229,7 +233,7 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
   ))
 
   print("-- statistics --")
-  avg_num_publications_per_researcher = (1.0*num_publications)/num_researchers 
+  avg_num_publications_per_researcher = (1.0*num_publications)/num_researchers
   if avg_num_publications_per_researcher <= low_estimate_of_avg_number_of_publications_per_researcher:
     avg_msg = "LOW"
   elif avg_num_publications_per_researcher >= high_estimate_of_avg_number_of_publications_per_researcher:
@@ -240,7 +244,7 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
     str(num_publications), str(num_researchers), str(avg_num_publications_per_researcher), avg_msg
   ))
   print("percentage of researchers who published: ({}/{}) = {}".format(
-    str(approximate_number_of_publishing_researchers), str(num_researchers), 
+    str(approximate_number_of_publishing_researchers), str(num_researchers),
     str((100.0*(approximate_number_of_publishing_researchers)/num_researchers))
   ))
   print("most number of articles published by a single researcher: " + str(highest_actual_number_of_publications_per_grad_student))
@@ -253,23 +257,22 @@ def findPublicationOddities(ls_researcher_ids, num_researchers, num_publications
 
 if __name__ == "__main__":
   # print out query to dimensions API and manually process it into *researchers.json
-  getListOfResearchObjectsFromDimensionsAPI()
+  num_postdocs = getListOfResearchObjectsFromDimensionsAPI("2018_postdoc_names.csv")
 
-  # process researchers.json into list of researcherIds 
+  # process researchers.json into list of researcherIds
   ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
 
   # researcher_ids to disinclude (suppose you've identified a few professors from researcher_ids_to_check)
-  ls_researcher_ids_to_remove = [] 
+  ls_researcher_ids_to_remove = []
   for rid in ls_researcher_ids_to_remove:
     ls_researcher_ids.remove(rid)
 
-  # print out query to dimensions API, then *manually process* it into publications.json  
+  # print out query to dimensions API, then *manually process* it into publications.json
   getListOfPublicationObjectsFromDimensionsResearcherIDs(ls_researcher_ids)
 
   # process the '*publications.json'
   ls_publication_entries = deduplicateListOfPublications(ls_researcher_ids)
 
-  # run the end results against 
-  num_postdocs = 501 # manual input according to how many entries we were given (individuals with those last names)
+  # run the end results against
   num_publications = len(ls_publication_entries)
   findPublicationOddities(ls_researcher_ids, num_postdocs, num_publications)
