@@ -1,4 +1,5 @@
-import json, math, re
+import json
+from dimensions_helpers import Publication, _chunkListIntoListOfListsBasedOnLimit
 from os.path import dirname, realpath, join
 
 # programmatic variables from/for the Dimensions API or for the script
@@ -19,36 +20,6 @@ high_estimate_of_percentage_of_publishing_researchers = 90
 
 high_estimate_of_any_number_of_publications_per_researcher = 8
 greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper = 8
-
-
-# publication object used to print out the `publiactions.tsv`
-class Publication:
-    def __init__(self, publication, rids):
-        self.pid = publication["id"] if "id" in publication else ""
-        self.date = publication["date"] if "date" in publication else ""
-        self.rids = "||".join(rids)
-
-        raw_title = publication["title"] if "title" in publication else ""
-        self.title = re.sub(r"\s+", " ", raw_title) if raw_title else ""
-        self.doi = publication["doi"] if "doi" in publication else ""
-        self.issn = publication["issn"][0] if "issn" in publication else ""
-
-        self.pub = publication["publisher"] if "publisher" in publication else ""
-        self.vol = publication["volume"] if "volume" in publication else ""
-        self.iss = publication["issue"] if "issue" in publication else ""
-        self.pages = publication["pages"] if "pages" in publication else ""
-
-    @staticmethod
-    def headerStr():
-        return "article_id\tpublication_date\tresearcher_ids\tdoi\tissn\tpublisher\tvolume\tissue\tpages\ttitle\n"
-
-    def __str__(self):
-        return "{}\t{}\t{}\t{}\t{}\t'{}'\t{}\t{}\t{}\t'{}'\n".format(
-            self.pid, self.date, self.rids,
-            self.doi, self.issn,
-            self.pub, self.vol, self.iss, self.pages, self.title
-        )
-
 
 # get the list of researchers: https://app.dimensions.ai/dsl
 def getListOfResearchObjectsFromDimensionsAPI(researchers_csv_filename):
@@ -75,8 +46,7 @@ return researchers[all] limit 1000 skip 0\n
         str(LAST_NAMES_LIST).replace("'", "\"").replace("{", "[").replace("}", "]"),
         '["{}","{}","{}"]'.format(id_BU, id_BU_ACADEMY, id_BU_MEDICAL),
         "[{}:{}]".format(yr_start, yr_current),
-        list(range(earliest_sensible_publication_year_for_a_postdoc, yr_end + 1))
-        # any of the years spanning between those years
+        "[{}:{}]".format(earliest_sensible_publication_year_for_a_postdoc, yr_end)  # any of the years spanning between those years
     )
     with open(join(directoryPath, "output", "researcher_queries.txt"), "w") as queries_output:
         queries_output.write(q_GET_LIST_OF_RESEARCH_IDS)
@@ -86,7 +56,7 @@ return researchers[all] limit 1000 skip 0\n
 
 def getListOfResearcherIDsFromRawJSONFileOfThem():
     ls_rids = []
-    with open(join(directoryPath, "data", "2018_rids.json"), "r") as rids_json:
+    with open(join(directoryPath, "data", "{}_rids.json".format(yr_end)), "r") as rids_json:
         for rid in json.load(rids_json):
             ls_rids.append(rid)
     return ls_rids
@@ -96,7 +66,7 @@ def getListOfResearcherIDsFromRawJSONFileOfThem():
 def getListOfResearcherIDsFromDimensionsObjects():
     researcher_id_list = []
     researcher_entry_list = []
-    with open(join(directoryPath, "data", "2018_researchers.json"), "r") as researchers_json:
+    with open(join(directoryPath, "data", "{}_researchers.json".format(yr_end)), "r") as researchers_json:
         research_list = json.load(researchers_json)
 
         for researcher in research_list:
@@ -121,31 +91,18 @@ def getListOfResearcherIDsFromDimensionsObjects():
     # print("number of researchers: " + str(len(research_list)))
     # print("number of researcher_ids: " + str(len(researcher_id_list)))
 
+    # create an export of the researchers with their last and first names (for verifying rids)
     with open(join(directoryPath, "output", "researchers.tsv"), "w") as researchers_tsv:
         researchers_tsv.write("last_name\tresearcher_id\tfirst_name\n")
         researcher_entry_list.sort()
         for entry in researcher_entry_list:
             researchers_tsv.write(entry)
 
-    with open(join(directoryPath, "data", "2018_rids.json"), "w") as rids_json:
+    # create an exported list of the rids for use in the query
+    with open(join(directoryPath, "data", "{}_rids.json".format(yr_end)), "w") as rids_json:
         rids_json.write(str(researcher_id_list).replace("'", '"'))
+
     return researcher_id_list
-
-
-def _chunkListIntoListOfListsBasedOnLimit(original_list, limit):
-    """
-      dimensions API has limits on how long each list can be,
-      this breaks larger lists into multiple lists for chained calls
-    """
-    len_old_list = len(original_list)
-    len_new_list = math.ceil(len(original_list) / limit)
-    new_list = []
-    for i in range(len_new_list):
-        start_index = i * limit  # e.g. (0 -> 0, 1->512, 2->1024)
-        end_index = ((i + 1) * limit) - 1  # e.g. (0 -> 511, 1->1023)
-        # print("{}[{}] => [{}:{}]".format(len_old_list, i, start_index, end_index))
-        new_list.append(original_list[start_index:end_index])  # e.g. 0 -> 0:511, 1 -> 512:1023, 2-> 1024:1535
-    return new_list
 
 
 def getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids):
@@ -171,7 +128,7 @@ return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+tim
 def deduplicateListOfPublications(ls_bu_researcher_ids):
     ls_pub_ids = []
     ls_publication_entries = []
-    with open(join(directoryPath, "data", "2018_publications.json"), "r") as publications_json:
+    with open(join(directoryPath, "data", "{}_publications.json".format(yr_end)), "r") as publications_json:
         publication_list = json.load(publications_json)
         initial_list_size = len(publication_list)
 
@@ -218,8 +175,7 @@ def rationalizeAndDescribeOutput(ls_researcher_ids, num_researchers, num_publica
                         dict_researchers[rid] = 1
 
     # calculate some statistics about this
-    approximate_number_of_publishing_researchers = len(
-        dict_researchers)  # skewed by researchers with more than one researcher_ids
+    approximate_number_of_publishing_researchers = len(dict_researchers)  # skewed by researchers with more than one researcher_ids
     researcher_ids_to_check = []
     ls_num_publications_per_individual = []
     highest_actual_number_of_publications_per_grad_student = 0
@@ -284,7 +240,7 @@ def rationalizeAndDescribeOutput(ls_researcher_ids, num_researchers, num_publica
 
 if __name__ == "__main__":
     # print out query to dimensions API and manually process it into *researchers.json
-    num_postdocs = getListOfResearchObjectsFromDimensionsAPI("2018_postdoc_names.csv")
+    num_postdocs = getListOfResearchObjectsFromDimensionsAPI("{}_postdoc_names.csv".format(yr_end))
 
     # process researchers.json into list of researcherIds
     ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
