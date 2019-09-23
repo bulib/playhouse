@@ -1,4 +1,4 @@
-import json
+import json, re
 from dimensions_helpers import Publication, _chunkListIntoListOfListsBasedOnLimit
 from os.path import dirname, realpath, join
 
@@ -7,9 +7,9 @@ LIMIT_FOR_IN_FILTER = 512  # can't check against more than this many items in a 
 directoryPath = dirname(realpath(__file__))  # the directory we're running the script in
 
 # direct inputs into the query
-yr_start = 2018
-yr_end = 2018
-yr_current = 2019
+year_start = 2018
+year_end = 2018
+year_current = 2019
 
 # sensible parameters we're using to sanity-check and filter the results
 low_estimate_of_avg_number_of_publications_per_researcher = 0.8
@@ -34,7 +34,7 @@ def getListOfResearchObjectsFromDimensionsAPI(researchers_csv_filename):
             num_total_researchers += 1
         LAST_NAMES_LIST = set(ls_names)
 
-    earliest_sensible_publication_year_for_a_postdoc = yr_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
+    earliest_sensible_publication_year_for_a_postdoc = year_start - greatest_number_of_years_ago_wed_expect_a_postdoc_to_publish_a_paper
     q_GET_LIST_OF_RESEARCH_IDS = """/* -- QUERY TO GET THE LIST OF RESEARCHERS -- */
 search researchers  
   where last_name in {}
@@ -45,8 +45,8 @@ return researchers[all] limit 1000 skip 0\n
 """.format(
         str(LAST_NAMES_LIST).replace("'", "\"").replace("{", "[").replace("}", "]"),
         '["{}","{}","{}"]'.format(id_BU, id_BU_ACADEMY, id_BU_MEDICAL),
-        "[{}:{}]".format(yr_start, yr_current),
-        "[{}:{}]".format(earliest_sensible_publication_year_for_a_postdoc, yr_end)  # any of the years spanning between those years
+        "[{}:{}]".format(year_start, year_current),
+        "[{}:{}]".format(earliest_sensible_publication_year_for_a_postdoc, year_end)  # any of the years spanning between those years
     )
     with open(join(directoryPath, "output", "researcher_queries.txt"), "w") as queries_output:
         queries_output.write(q_GET_LIST_OF_RESEARCH_IDS)
@@ -56,7 +56,7 @@ return researchers[all] limit 1000 skip 0\n
 
 def getListOfResearcherIDsFromRawJSONFileOfThem():
     ls_rids = []
-    with open(join(directoryPath, "data", "{}_rids.json".format(yr_end)), "r") as rids_json:
+    with open(join(directoryPath, "data", "{}_rids.json".format(year_end)), "r") as rids_json:
         for rid in json.load(rids_json):
             ls_rids.append(rid)
     return ls_rids
@@ -66,7 +66,7 @@ def getListOfResearcherIDsFromRawJSONFileOfThem():
 def getListOfResearcherIDsFromDimensionsObjects():
     researcher_id_list = []
     researcher_entry_list = []
-    with open(join(directoryPath, "data", "{}_researchers.json".format(yr_end)), "r") as researchers_json:
+    with open(join(directoryPath, "data", "{}_researchers.json".format(year_end)), "r") as researchers_json:
         research_list = json.load(researchers_json)
 
         for researcher in research_list:
@@ -99,7 +99,7 @@ def getListOfResearcherIDsFromDimensionsObjects():
             researchers_tsv.write(entry)
 
     # create an exported list of the rids for use in the query
-    with open(join(directoryPath, "data", "{}_rids.json".format(yr_end)), "w") as rids_json:
+    with open(join(directoryPath, "data", "{}_rids.json".format(year_end)), "w") as rids_json:
         rids_json.write(str(researcher_id_list).replace("'", '"'))
 
     return researcher_id_list
@@ -120,7 +120,7 @@ return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+tim
 """.format(
                 i + 1, num_queries,
                 str(list_of_lists[i]).replace("'", "\""),
-                "[{}:{}]".format(yr_start, yr_end)
+                "[{}:{}]".format(year_start, year_end)
             )
             queries_output.write(q_GET_LIST_OF_PUBLICATIONS)
 
@@ -128,7 +128,7 @@ return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+tim
 def deduplicateListOfPublications(ls_bu_researcher_ids):
     ls_pub_ids = []
     ls_publication_entries = []
-    with open(join(directoryPath, "data", "{}_publications.json".format(yr_end)), "r") as publications_json:
+    with open(join(directoryPath, "data", "{}_publications.json".format(year_end)), "r") as publications_json:
         publication_list = json.load(publications_json)
         initial_list_size = len(publication_list)
 
@@ -197,7 +197,7 @@ def rationalizeAndDescribeOutput(ls_researcher_ids, num_researchers, num_publica
 
     # calculate and report statistics
     print("\nNUMBER OF PUBLICATIONS published ({} - {}): {}\n\n".format(
-        yr_start, yr_end, num_publications
+        year_start, year_end, num_publications
     ))
 
     print("-- statistics --")
@@ -235,12 +235,12 @@ def rationalizeAndDescribeOutput(ls_researcher_ids, num_researchers, num_publica
         str(high_estimate_of_any_number_of_publications_per_researcher), str(len(researcher_ids_to_check))
     ))
 
-    print("\n-- NOTE: check output/ for additional files --\n")
+    print("\n-- NOTE: check 'output/' directory for additional files --\n")
 
 
 if __name__ == "__main__":
     # print out query to dimensions API and manually process it into *researchers.json
-    num_postdocs = getListOfResearchObjectsFromDimensionsAPI("{}_postdoc_names.csv".format(yr_end))
+    num_postdocs = getListOfResearchObjectsFromDimensionsAPI("{}_postdoc_names.csv".format(year_end))
 
     # process researchers.json into list of researcherIds
     ls_researcher_ids = getListOfResearcherIDsFromDimensionsObjects()
