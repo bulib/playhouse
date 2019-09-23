@@ -6,9 +6,9 @@ Get a list of research publications written by those with a list of given last n
 
 - We get a _yearly request_ from the department of 'Professional Development & Postdoctoral Affairs'
   to report on the publishing behavior of our post-docs (provided as a list of names).
-- This was previously handled (last year) by [@tomhohenstein](https://github.com/tomhohenstein),
-  but seeing as we have the [Dimensions](dimensions.ai) service and API, we could build
-  something more robust
+- This was previously obtained (last year) by [@tomhohenstein](https://github.com/tomhohenstein),
+  but seeing as we have the [Dimensions](dimensions.ai) service and API, we wanted to build
+  something more robust/repeatable
 - Dimensions provides a powerful database of publications with metadata regarding publishing
   institution and funding not found in other databases
 - They provide a page of their site where you can run custom queries on their data backend at:
@@ -24,20 +24,21 @@ Acquire additional data about BU researchers with last names from our csv.
 
 |criteria|explanation|
 |:-------|:----------|
-|`where last_name in [...]`|match the last names from the provided csv list|
+|`last_name in [...]`|match the last names from the provided csv list|
 |`current_research_org in [...]`|make sure they're affiliated with BU|
-|`last_publication_year`|make sure they've published in the years since|
-|`first_publication_year`|we don't expect someone currently in their postdoc to have been publishing for a decade already|
-|`researchers[all] limit 1000`| get all the info we can (for debugging) and as many as we can at a time|
-|`skip 0`|for if we have to page through results (`total_count`>1000). if so, switch to `1000`|
+|`last_publication_year`|make sure they've last published within the start and current years|
+|`first_publication_year`|make sure they've not been publishing for over a decade (unlikely for postdoc)|
+|`researchers[all]`| get all the data they'll give us about each researcher|
+|`limit 1000`|get as many responses as we can from the API |
+|`skip 0`|page through results if our queries get a `total_count` over the `1000` limit|
 
 ### Publications Query
 
 |criteria|explanation|
 |:-------|:----------|
-|`where researchers.id in ["rid_512", "rid_513", ..., "rid_1023"]`|matches our researchers from the first step|
-|`year in [YEAR_START:YEAR_END]`|check that it was published in our range|
-|publications[id+...+researchers]|get a bunch of stuff, but not everything or it takes forever|
+|`where researchers.id in ["rid_512", "rid_513", ..., "rid_1023"]`|find publications written by the researchers from the first step|
+|`year in [YEAR_START:YEAR_END]`|only get publications that were published in our specified range|
+|publications[id+...+researchers]|include a bunch of information about the publication, but not everything (or it takes forever)|
 |`limit 1000 skip 0`| same as above|
 
 ## Usage
@@ -48,7 +49,6 @@ All we're really doing is:
 - constructing queries based on input
 - manually running those queries in the browser
 - collecting the main data from what's returned into json files
-- extracting some additional data from those json files
 - reporting on that data and creating exports
 
 ```$ python ./dimensions.py```
@@ -62,43 +62,47 @@ I - **Get list of researchers** from Dimensions and store as `researchers.json`
 
 - ensure delivery of a csv file with the list of desired names of the researchers with only their last name in the first column
 
-- update the values in the 
+- update the values for the variables that construct the query (e.g. `year_start`,`year_end`) and any estimates
 
 - run `getListOfResearchObjectsFromDimensionsAPI` with the csv involved to produce `output/researcher_queries.txt`
 ```getListOfResearchObjectsFromDimensionsAPI(researchers_csv_filename)```
 
-- copy/paste the query/queries into the text area at [https://app.dimensions.ai/dsl](https://app.dimensions.ai/dsl) and 'Run'
+- copy/paste the query/queries into the text area at [https://app.dimensions.ai/dsl](https://app.dimensions.ai/dsl) and 'Run' (individually)
+
 - 'Copy to clipboard' the returned results, compiling the `researchers:[]` (potentially across queries) into a new file
-  `data/researchers.json` file constituting a list of json objects: `[ {}, {}, ..., {} ]`
+  `data/researchers.json`, as a list of json objects: `[ {}, {}, ..., {} ]`
 
 _NOTE: pay close attention to the `_stats.total_count` value of the return object from the API! if this number is over 1000,
-  you'll have to page through your results by adding the `skip` variable to your query (see `queries.txt`)_
+  you'll have to page through your results by adding the `skip` variable to your query (see the second entry in `queries.txt`)_
 
-- process the `data/researchers.json` file and output `rids.json`, while creating `output/researchers.tsv`.
+- process the `data/researchers.json` file into a list of researcher ids and output into `output/rids.json` as list of strings (`[ "", "", ..., ""]`).
+
+- compile and export some of the researcher information into `output/researchers.tsv` for later review.
 ```getListOfResearcherIDsFromDimensionsObjects()```
 
 ---
 II - **Get matching publications** from Dimensions API
 
 - use the list of researcher ids (from the previous step) to construct a new set of queries against the dimensions API,
-  and outputting them into `output/publications_queries.txt`.
+  outputting them into `output/publications_queries.txt`.
 ```getListOfPublicationObjectsFromDimensionsResearcherIDs(researcher_ids)```
 
 _NOTE: the list of researcher_ids will almost definitely be above the maximum number of items Dimensions will allow in a query (`LIMIT_FOR_IN_FILTER`).
-  this makes us have to cut the `researcher_id` list into parts and run them as multiple queries and manually combine the
+  this makes us have to cut the `researcher_id` list into parts, run them as multiple queries, and manually combine the
   results afterward_
 
 - run this set of queries by the same method as before, collecting the publication objects into a `data/publications.json` file
   of a similar format (`[{},{},{}]`)
   
-- process through this list of publications eliminating duplicates and preparing an `output/publications.tsv`.
+- process through this list of publications, eliminating duplicates and preparing an `output/publications.tsv`.
 ```deduplicateListOfPublications(ls_bu_researcher_ids)```
 
 ---
 
 III - **Gather Statistics** about what we've determined
 
-- Check the output against what we'd expect in order to debug and troubleshoot (see below)
+- Check the output (what's printed in the terminal) against the estimates of what we'd expect (`# sensible parameters`)
+  in order to debug and troubleshoot (see example of a successful run below)
 
 ```text
 $ python dimensions.py
@@ -138,8 +142,8 @@ number of researchers who published more than the maximum 8 papers expected (per
 | C  |researchers with high number of publications| 8? /shrug |
 
 - **Skewed Ratio (A)**: is significantly `HIGH` or `LOW`: the overall ratio/health is in question and you should review your data inputs/method 
-- **Skewed Distribution (B)**: : the distribution of publications/activity level is weird and we might want to check that the researchers are the right level
-- **Abnormally Productive Researchers (C)**: there were researchers who published more than we'd expect them to, so we'll want to manually check `output/researcher_to_check.tsv`|
+- **Skewed Distribution (B)**: : the distribution of publications/activity level is weird and we might want to check that we're looking at the right level of researcher/academic
+- **Abnormally Productive Researchers (C)**: if there were researchers who published more than we'd expect them to, we'll want to check them manually with `output/researcher_to_check.tsv`|
 
   1. take a closer look at that researcher by asking Dimensions about them with the query below
   2. make sure that their information fits what you'd expect for a postdoc (and that they're not a professor/PI) 
