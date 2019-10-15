@@ -1,6 +1,7 @@
 .ipynb_checkpoints/
 
 node_modules/
-package-lock.json
+.DS_STORE
 
-.DS_Store
+src/dimensions/data/
+src/dimensions/output/

@@ -1,0 +1,33 @@
+/* -- QUERY TO GET THE LIST OF RESEARCHERS 1 of N)-- *
+search researchers  
+  where last_name in ["LAST_NAME_1", "LAST_NAME_2", ..., "LAST_NAME_N"]
+  and current_research_org.id in ["grid.189504.1","grid.448566.d", "grid.475010.7"]
+  and last_publication_year in [YEAR_START:CURRENT_YEAR]
+  and first_publication_year in [YEAR_END-8, YEAR_END-7, ..., YEAR_END]
+return researchers[all] limit 1000 skip 0
+
+/* -- QUERY TO GET THE LIST OF RESEARCHERS (2 of N) // for result lists >1000 -- *
+search researchers
+  where last_name in ["LAST_NAME_1", "LAST_NAME_2", ..., "LAST_NAME_N"]
+  and current_research_org.id in ["grid.189504.1","grid.448566.d", "grid.475010.7"]
+  and last_publication_year in [YEAR_START:CURRENT_YEAR]
+  and first_publication_year in [YEAR_END-8, YEAR_END-7, ..., YEAR_END]
+return researchers[all] limit 1000 skip 1000
+
+/* -- QUERY TO GET THE LIST OF PUBLICATIONS  (1 of N) -- */
+search publications
+  where researchers.id in ["rid_1", "rid_2", ..., "rid_511"]
+  and year in [YEAR_START:YEAR_END]
+return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 
+
+/* -- QUERY TO GET THE LIST OF PUBLICATIONS  (2 of N) -- */
+search publications
+  where researchers.id in ["rid_512", "rid_513", ..., "rid_1023"]
+  and year in [YEAR_START:YEAR_END]
+return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0
+
+/* -- QUERY TO GET THE LIST OF PUBLICATIONS  (N of N) -- */
+search publications
+  where researchers.id in ["rid_1024", "rid_1025", ..., "rid_m"]
+  and year in [YEAR_START:YEAR_END]
+return publications[id+title+year+date+doi+issn+publisher+volume+issue+pages+times_cited+researchers+type] limit 1000 skip 0
